@@ -1,4 +1,4 @@
-"""Run: streamlit run app.py | Deployed entrypoint: app.py."""
+
 import streamlit as st
 from shared import load_data
 

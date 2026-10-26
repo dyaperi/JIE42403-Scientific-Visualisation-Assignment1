@@ -1,4 +1,4 @@
-"""Shared data handling, styling and plotting helpers for the JIE42403 app."""
+
 from pathlib import Path
 import numpy as np
 import pandas as pd
