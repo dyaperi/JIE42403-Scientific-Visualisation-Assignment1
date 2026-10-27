@@ -3,7 +3,7 @@ import streamlit as st
 from shared import load_data
 
 st.set_page_config(
-    page_title='Malaysia Demographic Explorer | JIE42403',
+    page_title='Malaysia Demographic Explorer | JIE42403 Data Visualization',
     page_icon='📊', layout='wide', initial_sidebar_state='expanded',
 )
 
