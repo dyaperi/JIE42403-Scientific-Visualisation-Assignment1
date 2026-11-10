@@ -167,7 +167,7 @@ def load_live_data():
     return prepare_data(marriages_raw, births_raw, population_raw)
 
 st.title("Malaysia Demographic Trends & Relationships")
-st.caption("JIE42403 Scientific Visualisation • Three sources • Three objectives • Three charts")
+st.caption("JIE42403 Scientific Visualisation")
 st.markdown("**Study period:** 2017–2024 | **Sources:** OpenDOSM / DOSM, JPN")
 
 try:
