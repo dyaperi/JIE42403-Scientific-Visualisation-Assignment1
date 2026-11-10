@@ -223,3 +223,59 @@ with st.expander("Data definitions, preprocessing, official source links"):
 - Rates have distinct denominators and should not be added or directly equated. The scatter plot is descriptive and pooled across states, not causal evidence.
 - Original files are loaded live from OpenDOSM Parquet URLs, with a 24-hour Streamlit cache to reduce repeated downloads.
 """)
+
+
+# DATA EXPLORER - RAW & PROCESSED DATA
+
+st.divider()
+st.subheader("Data Explorer")
+
+st.write(
+    "Explore the three original OpenDOSM datasets "
+    "and the cleaned dataset used in this analysis."
+)
+
+@st.cache_data(ttl=86400)
+def load_raw_dataset(dataset_key):
+    return pd.read_parquet(SOURCES[dataset_key])
+
+
+with st.expander("View Raw & Processed Data", expanded=False):
+
+    dataset_option = st.selectbox(
+        "Select Dataset",
+        [
+            "Merged Dataset (2017–2024)",
+            "Annual Marriages by State",
+            "Annual Live Births by State",
+            "Population Table: States"
+        ]
+    )
+
+    if dataset_option == "Merged Dataset (2017–2024)":
+        data = df.copy()
+
+    elif dataset_option == "Annual Marriages by State":
+        data = load_raw_dataset("marriages")
+
+    elif dataset_option == "Annual Live Births by State":
+        data = load_raw_dataset("births")
+
+    else:
+        data = load_raw_dataset("population")
+
+    st.write(f"**Total Rows:** {len(data):,}")
+    st.write(f"**Total Columns:** {len(data.columns)}")
+
+    st.dataframe(
+        data,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.download_button(
+        label="Download Dataset as CSV",
+        data=data.to_csv(index=False).encode("utf-8"),
+        file_name="selected_dataset.csv",
+        mime="text/csv"
+    )
