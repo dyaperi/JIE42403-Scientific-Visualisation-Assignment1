@@ -195,25 +195,128 @@ col_b.metric("Live births", f"{focus['live_births'].sum():,.0f}")
 col_c.metric("Population", f"{focus['total_population'].sum():,.0f}")
 st.caption(f"Summary counts refer to {focus_year} and the selected state(s); rates are not summed.")
 
+
+def describe_change(value):
+    if abs(value) < 0.05:
+        return "remained almost unchanged"
+    direction = "increased" if value > 0 else "decreased"
+    return f"{direction} by {abs(value):.1f}%"
+
+
+# OBJECTIVE 1 — DEMOGRAPHIC TRENDS
 st.divider()
 st.subheader("Objective 1 — Trends")
 st.write("Analyze changes in marriage registrations, live births and population between 2017 and 2024.")
+
 st.plotly_chart(chart1_indexed_trends(df, states), use_container_width=True)
 st.caption("Each indicator is indexed to its own 2017 baseline (100), allowing comparison of relative change, not absolute scale.")
 
+trend_data = df[df["state"].isin(states)]
+yearly_totals = trend_data.groupby("year")[
+    ["female_marriages", "live_births", "total_population"]
+].sum()
+
+def percent_change(column):
+    start_value = yearly_totals.loc[START_YEAR, column]
+    end_value = yearly_totals.loc[END_YEAR, column]
+    return (end_value / start_value - 1) * 100
+
+marriage_change = percent_change("female_marriages")
+birth_change = percent_change("live_births")
+population_change = percent_change("total_population")
+
+with st.container(border=True):
+    st.markdown("#### Key Findings — Objective 1")
+    st.write(
+        f"Across the {len(states)} selected states from {START_YEAR} to {END_YEAR}, "
+        f"female marriage registrations **{describe_change(marriage_change)}**, "
+        f"live births **{describe_change(birth_change)}**, "
+        f"and population **{describe_change(population_change)}**."
+    )
+    st.caption("The indexed trends compare relative changes, not absolute totals.")
+
+
+# OBJECTIVE 2 — RELATIONSHIP ANALYSIS
 st.divider()
 st.subheader("Objective 2 — Relationships")
 st.write("Examine the association between female marriage rates and crude birth rates across states, considering population size.")
+
 fig, corr = chart2_population_bubbles(df, focus_year, states)
 st.plotly_chart(fig, use_container_width=True)
-st.caption(f"Pearson r = {corr:+.2f} for selected states ({focus_year}); bubble area indicates population. Association does not imply causation. The rates use different denominators.")
 
+with st.container(border=True):
+    st.markdown("#### Key Findings — Objective 2")
+
+    if len(focus) < 3 or pd.isna(corr):
+        st.write(
+            "At least three states with varying values are needed "
+            "for a meaningful correlation interpretation."
+        )
+    else:
+        magnitude = abs(corr)
+        if magnitude < 0.2:
+            strength = "very weak"
+        elif magnitude < 0.4:
+            strength = "weak"
+        elif magnitude < 0.6:
+            strength = "moderate"
+        elif magnitude < 0.8:
+            strength = "strong"
+        else:
+            strength = "very strong"
+
+        direction = "positive" if corr > 0 else "negative" if corr < 0 else "zero"
+
+        st.write(
+            f"In {focus_year}, the Pearson correlation between female marriage rates "
+            f"and crude birth rates across {len(focus)} selected states was "
+            f"**r = {corr:+.3f}**, indicating a **{strength} {direction} "
+            f"linear association**."
+        )
+
+    st.caption(
+        "Bubble size represents population. Correlation does not establish causation. "
+        "Marriage and birth rates have different denominators."
+    )
+
+
+# OBJECTIVE 3 — STATE COMPARISON
 st.divider()
 st.subheader("Objective 3 — State Comparison")
 st.write("Compare marriage rates, crude birth rates and population across states using standardized values.")
-st.plotly_chart(chart3_state_heatmap(df, focus_year, states), use_container_width=True)
-st.caption("Z-scores are calculated separately for each indicator across selected states. Hover to see original units. These are relative positions, not rates of change.")
 
+st.plotly_chart(
+    chart3_state_heatmap(df, focus_year, states),
+    use_container_width=True
+)
+
+with st.container(border=True):
+    st.markdown("#### Key Findings — Objective 3")
+
+    if len(focus) < 2:
+        st.write(
+            "Select at least two states to compare demographic indicators."
+        )
+    else:
+        highest_marriage = focus.loc[focus["female_marriage_rate"].idxmax()]
+        highest_birth = focus.loc[focus["crude_birth_rate"].idxmax()]
+        largest_population = focus.loc[focus["total_population"].idxmax()]
+
+        st.write(
+            f"Among the {len(focus)} selected states in {focus_year}, "
+            f"**{highest_marriage['state']}** recorded the highest female marriage rate "
+            f"({highest_marriage['female_marriage_rate']:.1f} per 1,000 unmarried women), "
+            f"while **{highest_birth['state']}** recorded the highest crude birth rate "
+            f"({highest_birth['crude_birth_rate']:.1f} per 1,000 people). "
+            f"**{largest_population['state']}** had the largest population "
+            f"({largest_population['total_population']:,.0f} people)."
+        )
+
+    st.caption(
+        "Heatmap colours represent z-scores calculated separately for each indicator "
+        "across the selected states, not the original values."
+    )
+  
 with st.expander("Data definitions, preprocessing, official source links"):
     st.markdown("""
 - [Annual Marriages by State](https://open.dosm.gov.my/data-catalogue/marriages_state): female (`sex=female`) registrations and rates per 1,000 unmarried women.
